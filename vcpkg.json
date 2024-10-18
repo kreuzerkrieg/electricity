@@ -1,0 +1,15 @@
+{
+  "name" : "electricity",
+  "version-string" : "1.0.0",
+  "builtin-baseline" : "509f71e53f45e46c13fa7935d2f6a45803580c07",
+  "dependencies" : [ {
+    "name" : "boost-program-options",
+    "version>=" : "1.85.0#2"
+  }, {
+    "name" : "boost-algorithm",
+    "version>=" : "1.85.0#1"
+  }, {
+    "name" : "boost-date-time",
+    "version>=" : "1.85.0#1"
+  } ]
+}
