@@ -1,0 +1,3 @@
+[submodule "uPlot"]
+	path = uPlot
+	url = git@github.com:leeoniya/uPlot.git

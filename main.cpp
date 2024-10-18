@@ -1,10 +1,13 @@
 #include <boost/date_time.hpp>
 #include <boost/program_options.hpp>
+#include <filesystem>
+#include <format>
 #include <fstream>
 #include <iostream>
 
 
 namespace bpo = boost::program_options;
+namespace fs = std::filesystem;
 
 static boost::gregorian::date parse_date(const std::string& date) {
     std::vector<std::string> data;
@@ -131,10 +134,75 @@ int main(int argc, char* argv[]) {
         std::cout << "The rest:\t" << std::get<1>(kwhs) << "kWh"
                   << ", " << std::get<1>(kwhs) * kWh_price << "NIS" << std::endl;
     } else {
+        auto output_plot = fs::path(input_file).replace_extension(".html");
+        std::ofstream htmlFile(output_plot);
+        if (!htmlFile.is_open()) {
+            std::cerr << "Failed to open the plot output file " << input_file << std::endl;
+            return 1;
+        }
+        boost::posix_time::ptime epoch(boost::gregorian::date(1970, 1, 1));
+        htmlFile << R"(
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>kW consumption</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <link rel="stylesheet" href="uPlot/dist/uPlot.min.css">
+</head>
+<body>
+<script src="uPlot/dist/uPlot.iife.min.js"></script>
+<script>
+    let data = [)"
+                 << std::endl;
+        std::string x_axis = "[";
+        std::string y_axis = "[";
         for (const auto& [time, kw] : time_map) {
             std::cout << std::setw(2) << std::setfill('0') << time.hours() << ":" << std::setw(2) << std::setfill('0') << time.minutes()
                       << /*"\t" << std::setw(kw) << std::setfill('*') << "" <<*/ "\t" << kw << /*"KWh" <<*/ std::endl;
+            x_axis += std::to_string(time.total_seconds()) + ", ";
+            y_axis += std::to_string(kw) + ", ";
         }
+        x_axis += "],";
+        y_axis += "],";
+        htmlFile << x_axis << std::endl;
+        htmlFile << y_axis << std::endl;
+
+        htmlFile << R"a(
+];
+    let opts = {
+        title: "kW consumption",
+        id: "chart1",
+        class: "my-chart",
+        width: 1900,
+        height: 600,
+        series: [
+            {},
+            {
+                // initial toggled state (optional)
+                show: true,
+
+                spanGaps: false,
+
+                // in-legend display
+                label: "kWh",
+                // value: (self, rawValue) => "$" + rawValue.toFixed(2),
+
+                // series style
+                stroke: "red",
+                width: 1,
+                fill: "rgba(255, 0, 0, 0.3)",
+        dash: [10, 5],
+    }
+    ],
+};
+
+let uplot = new uPlot(opts, data, document.body);
+</script>
+</body>
+</html>)a";
+        htmlFile.close();
     }
     return 0;
 }
